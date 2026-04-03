@@ -111,9 +111,13 @@ export async function POST(request) {
   const body = await request.json();
   const result = await handler(body);
 
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
   if (result.error) {
-    return new Response(JSON.stringify(result), { status: 400 });
+    return new Response(JSON.stringify(result), { status: 400, headers });
   }
 
-  return new Response(JSON.stringify(result));
+  return new Response(JSON.stringify(result), { status: 200, headers });
 }
