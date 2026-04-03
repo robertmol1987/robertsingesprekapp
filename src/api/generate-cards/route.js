@@ -102,22 +102,17 @@ Geef alleen de ${contentTypeText} terug, elk op een nieuwe regel, zonder nummeri
     return { cards };
   } catch (error) {
     return {
-      error: `Exception: ${error.message}. Stack: ${error.stack}`,
+      error: `Exception: ${error.message}`,
     };
   }
 }
 
 export async function POST(request) {
-  const body = await request.json();
-  const result = await handler(body);
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const result = await handler(await request.json());
 
   if (result.error) {
-    return new Response(JSON.stringify(result), { status: 400, headers });
+    return Response.json(result, { status: 400 });
   }
 
-  return new Response(JSON.stringify(result), { status: 200, headers });
+  return Response.json(result, { status: 200 });
 }
