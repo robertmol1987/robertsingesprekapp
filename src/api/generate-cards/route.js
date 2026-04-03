@@ -32,12 +32,23 @@ ${
 Geef alleen de ${contentTypeText} terug, elk op een nieuwe regel, zonder nummering of extra tekst.`;
 
   try {
-    const apiResponse = await fetch("/integrations/chat-gpt/conversationgpt4", {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        error: "ANTHROPIC_API_KEY omgevingsvariabele niet ingesteld",
+      };
+    }
+
+    const apiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
         messages: [
           {
             role: "user",
@@ -56,12 +67,7 @@ Geef alleen de ${contentTypeText} terug, elk op een nieuwe regel, zonder nummeri
 
     const data = await apiResponse.json();
 
-    if (
-      !data ||
-      !data.choices ||
-      !Array.isArray(data.choices) ||
-      data.choices.length === 0
-    ) {
+    if (!data || !data.content || !Array.isArray(data.content) || data.content.length === 0) {
       return {
         error: `Onverwachte API response structuur. Data ontvangen: ${JSON.stringify(
           data
@@ -69,7 +75,7 @@ Geef alleen de ${contentTypeText} terug, elk op een nieuwe regel, zonder nummeri
       };
     }
 
-    const generatedText = data.choices[0]?.message?.content;
+    const generatedText = data.content[0]?.text;
 
     if (!generatedText) {
       return {
@@ -100,6 +106,14 @@ Geef alleen de ${contentTypeText} terug, elk op een nieuwe regel, zonder nummeri
     };
   }
 }
+
 export async function POST(request) {
-  return handler(await request.json());
+  const body = await request.json();
+  const result = await handler(body);
+
+  if (result.error) {
+    return new Response(JSON.stringify(result), { status: 400 });
+  }
+
+  return new Response(JSON.stringify(result));
 }
